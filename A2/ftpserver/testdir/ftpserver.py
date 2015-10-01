@@ -24,7 +24,8 @@ class FTPserverThread(threading.Thread):
         self.conn.send('220 Welcome!\r\n')
         while True:
             cmd = self.conn.recv(256)
-            if not cmd: break
+            if not cmd: 
+                break
             else:
                 print 'Recieved:',cmd
                 try:
@@ -32,7 +33,6 @@ class FTPserverThread(threading.Thread):
                     func(cmd)
                 except Exception,e:
                     print 'ERROR:',e
-                    #traceback.print_exc()
                     self.conn.send('500 Sorry.\r\n')
 
     def SYST(self,cmd):
@@ -198,7 +198,8 @@ class FTPserverThread(threading.Thread):
         self.start_datasock()
         while True:
             data = self.datasock.recv(1024)
-            if not data: break
+            if not data: 
+                break
             fo.write(data)
         fo.close()
         self.stop_datasock()

@@ -16,6 +16,7 @@ FTP_DATA_PORT = FTP_PORT - 1
 #
 FTP_DATA_PORT = FTP_DATA_PORT + 50000
 
+FILENAME = ""
 
 # Main program (called at the end of this file).
 #
@@ -30,6 +31,7 @@ def control(hostname):
     #
     # Create control connection
     #
+    global FILENAME
     s = socket(AF_INET, SOCK_STREAM)
     s.connect((hostname, FTP_PORT))
     f = s.makefile('r') # Reading the replies is easier from a file...
@@ -47,8 +49,12 @@ def control(hostname):
         if not r:
             r = newdataport(s, f)
         cmd = getcommand()
-        if not cmd: break
+        if not cmd: 
+            break
+
         s.send(cmd + "\r\n")
+        if cmd.find("retr") != -1:
+            FILENAME = cmd[5:]
     
 
 # Create a new data port and send a PORT command to the server for it.
@@ -97,33 +103,42 @@ def getreply(f):
     if line[3:4] == '-':
         while 1:
             line = f.readline()
-            if not line: break # Really an error
+            if not line: 
+                break # Really an error
             print (line)
             if line[:3] == code and line[3:4] != '-': break
 
     return code
 
 
+
+
 # Get the data from the data connection.
 #
 def getdata(r):
+    global FILENAME
+
     print ('accepting data connection')
     conn, host = r.accept()
     print ('data connection accepted')
-    '''
-    file = open(dropdir, 'wb')                 # create local file in cwd
-        data = sock.recv(blksz)                # get up to 1K at a time
-        if not data: break                     # till closed on server side
-        file.write(data) 
+    if FILENAME == "":
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data: 
+                break
+            sys.stdout.write(data)
 
-    '''
+    else:
 
-    #file = open(filename, 'wb')                 # create local file in cwd
+        file = open(FILENAME, 'wb')                 # create local file in cwd
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data:
+                 break
+            file.write(data)
 
-    while True:
-        data = conn.recv(BUFSIZE)
-        if not data: break
-        sys.stdout.write(data)
+        FILENAME = ""
+        
     print ('end of data connection')
 
 # Get a command from the user.
@@ -132,7 +147,8 @@ def getcommand():
     try:
         while 1:
             line = raw_input('client> ')
-            if line: return line
+            if line: 
+                return line
     except EOFError:
         return ''
 
