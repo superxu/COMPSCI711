@@ -42,7 +42,6 @@ def client(host, port, filename):
     sock.send((filename + '\n').encode())      # send remote name with dir: bytes
     dropdir = os.path.split(filename)[1]       # filename at end of dir path
 
-    print("Client filename = %s" % dropdir)
 
     file = open(dropdir, 'wb')                 # create local file in cwd
     while True:
@@ -58,8 +57,6 @@ def client(host, port, filename):
 def serverthread(clientsock):
     sockfile = clientsock.makefile('r')        # wrap socket in dup file obj
     filename = sockfile.readline()[:-1]        # get filename up to end-line
-
-    print("Server filename = %s" % filename)
 
     try:
         file = open(filename, 'rb')
