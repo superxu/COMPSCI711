@@ -1,0 +1,7 @@
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\bin\Debug\EchoActors.exe.config
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\bin\Debug\EchoActors.exe
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\bin\Debug\EchoActors.pdb
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\bin\Debug\System.Threading.Tasks.Dataflow.dll
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\obj\Debug\EchoActors.exe
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\obj\Debug\EchoActors.pdb
+C:\Uni of Auckland\CS711\A1\EchoActorsCS\EchoActors\obj\Debug\EchoActors.csprojResolveAssemblyReference.cache

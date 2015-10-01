@@ -1,0 +1,7 @@
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\bin\Debug\Byzantine.exe.config
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\bin\Debug\Byzantine.exe
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\bin\Debug\Byzantine.pdb
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\obj\Debug\Byzantine.csprojResolveAssemblyReference.cache
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\obj\Debug\Byzantine.exe
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\obj\Debug\Byzantine.pdb
+C:\Uni of Auckland\CS711\A1\ByzantineCS\Byzantine\bin\Debug\System.Threading.Tasks.Dataflow.dll

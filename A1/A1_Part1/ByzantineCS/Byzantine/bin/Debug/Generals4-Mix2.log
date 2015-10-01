@@ -1,0 +1,70 @@
+... N=4, V0=0, F=1, L=2
+...
+... 10: <Nid=10, SortedNeighDelay=(10:0, 20:1100, 30:1100, 40:1100), Initial=0, IsByz=True, ByzMsgs=[; 0, 0, 0, 1; 011, 011, 111, 211]>
+... 20: <Nid=20, SortedNeighDelay=(10:1200, 20:0, 30:1200, 40:1200), Initial=0, IsByz=False, ByzMsgs=[]>
+... 30: <Nid=30, SortedNeighDelay=(10:1400, 20:1400, 30:0, 40:1400), Initial=1, IsByz=False, ByzMsgs=[]>
+... 40: <Nid=40, SortedNeighDelay=(10:4800, 20:1800, 30:1800, 40:0), Initial=1, IsByz=False, ByzMsgs=[]>
+10 -> [1, 0] -> 10:0
+20 -> [1, 0] -> 20:0
+30 -> [1, 1] -> 30:0
+40 -> [1, 1] -> 40:0
+10 -> [1, 0] -> 20:1100
+10 -> [1, 0] -> 30:1100
+10 -> [1, 1] -> 40:1100
+20 -> [1, 0] -> 40:1200
+20 -> [1, 0] -> 30:1200
+20 -> [1, 0] -> 10:1200
+30 -> [1, 1] -> 20:1400
+30 -> [1, 1] -> 10:1400
+30 -> [1, 1] -> 40:1400
+... EigValues Round=1, Nid=40: 1011
+40 -> [2, 101] -> 40:0
+40 -> [1, 1] -> 20:1800
+40 -> [1, 1] -> 30:1800
+... EigValues Round=1, Nid=30: 0011
+... EigValues Round=1, Nid=20: 0011
+30 -> [2, 001] -> 30:0
+20 -> [2, 011] -> 20:0
+20 -> [2, 011] -> 30:1200
+20 -> [2, 011] -> 10:1200
+... 20 -> [2, 011] -> 10 +++
+20 -> [2, 011] -> 40:1200
+30 -> [2, 001] -> 20:1400
+30 -> [2, 001] -> 40:1400
+30 -> [2, 001] -> 10:1400
+... 30 -> [2, 001] -> 10 +++
+40 -> [2, 101] -> 30:1800
+40 -> [2, 101] -> 20:1800
+40 -> [1, 1] -> 10:4800
+... EigValues Round=1, Nid=10: 0011
+... 20 -> [2, 011] -> 10 ---
+... 30 -> [2, 001] -> 10 ---
+10 -> [2, 011] -> 10:0
+10 -> [2, 111] -> 30:1100
+10 -> [2, 211] -> 40:1100
+... EigValues Round=2, Nid=30: 001100111111
+... EigValues Round=2, Nid=40: 001200111111
+... EigNewValues round=2, Nid=40: 001000111111
+... EigNewValues round=2, Nid=30: 001100111111
+... EigNewValues round=1, Nid=30: 0011
+... EigNewValues round=0, Nid=30: 0
+... EigNewValues round=1, Nid=40: 0011
+... EigNewValues round=0, Nid=40: 0
+10 -> [2, 011] -> 20:1100
+... EigValues Round=2, Nid=20: 001000111111
+... EigNewValues round=2, Nid=20: 001000111111
+... EigNewValues round=1, Nid=20: 0011
+... EigNewValues round=0, Nid=20: 0
+40 -> [2, 101] -> 10:4800
+... EigValues Round=2, Nid=10: 001000111111
+... EigNewValues round=2, Nid=10: 001000111111
+... EigNewValues round=1, Nid=10: 0011
+... EigNewValues round=0, Nid=10: 0
+10: *
+20: 0
+30: 0
+40: 0
+total time 6376 ms
+node count 4
+edge count 10
+message count 32
