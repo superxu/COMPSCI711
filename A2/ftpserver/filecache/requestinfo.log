@@ -1,18 +1,20 @@
 {
         "1": [
                 [
-                        "user request: file 1 at 2015-10-02 21:42:49 +1300", 
-                        "response: file 1 downloaded from the server"
-                ], 
-                [
-                        "user request: file 1 at 2015-10-02 21:42:38 +1300", 
+                        "user request: file 1 at 2015-10-02 22:07:05 +1300", 
                         "response: file 1 downloaded from the server"
                 ]
         ], 
-        "cache.py": [
-                []
+        "2": [
+                [
+                        "user request: file 2 at 2015-10-02 22:07:53 +1300", 
+                        "response: file 2 downloaded from the server"
+                ]
         ], 
         "test.txt": [
-                []
+                [
+                        "user request: file test.txt at 2015-10-02 22:06:53 +1300", 
+                        "response: cached file test.txt"
+                ]
         ]
 }
