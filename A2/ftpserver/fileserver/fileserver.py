@@ -169,23 +169,27 @@ class FTPserverThread(threading.Thread):
     def RETR(self,cmd):
         fn = os.path.join(self.cwd,cmd[5:-2])
 
-        print 'Downlowding:',fn
         if self.mode == 'I':
             fi = open(fn,'rb')
         else:
             fi = open(fn,'r')
-        self.conn.send('150 Opening data connection.\r\n')
-        if self.rest:
-            fi.seek(self.pos)
-            self.rest = False
-        data = fi.read(1024)
-        self.start_datasock()
-        while data:
-            self.datasock.send(data)
+
+        if fi:
+            print 'Downlowding:', fn
+            self.conn.send('150 Opening data connection.\r\n')
+            if self.rest:
+                fi.seek(self.pos)
+                self.rest = False
             data = fi.read(1024)
-        fi.close()
-        self.stop_datasock()
-        self.conn.send('226 Transfer complete.\r\n')
+            self.start_datasock()
+            while data:
+                self.datasock.send(data)
+                data = fi.read(1024)
+            fi.close()
+            self.stop_datasock()
+            self.conn.send('226 Transfer complete.\r\n')
+        else:
+            self.conn.send('500 Sorry.\r\n')
 
 
 class FTPserver(threading.Thread):

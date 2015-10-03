@@ -62,6 +62,7 @@ class CacheClient():
             code = self.getreply(f)
             if code in ('221', 'EOF', '500'):
                 print("Fail to download file...")
+                self.downloadok = False
                 break
 
             if code == '150':
@@ -286,7 +287,7 @@ class CacheServerThread(threading.Thread):
 
     def delete_requestlog_entry(self, entry):
         requestlog = self.cwd + "/"+ "requestinfo.log"
-        origin_values = get_requestlog_content(self.cwd)
+        origin_values = self.get_requestlog_content(self.cwd)
         print("before pop = %s" % origin_values)
         print("entry = %s" % entry)
         if origin_values.has_key(entry):  
@@ -555,8 +556,6 @@ class CacheLog():
 
 
 # cache should be both a client and a server
-
-
 
 def main():
 
