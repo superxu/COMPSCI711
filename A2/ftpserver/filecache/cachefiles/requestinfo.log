@@ -1,0 +1,14 @@
+{
+        "./cachefiles/test.txt": [
+                [
+                        "user request: file ./cachefiles/test.txt at 2015-10-03 23:12:21 +1300", 
+                        "response: file ./cachefiles/test.txt downloaded from the server"
+                ]
+        ], 
+        "./cachefiles/xxx.txt": [
+                [
+                        "user request: file ./cachefiles/xxx.txt at 2015-10-03 23:12:29 +1300", 
+                        "response: file ./cachefiles/xxx.txt downloaded from the server"
+                ]
+        ]
+}

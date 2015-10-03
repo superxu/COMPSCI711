@@ -4,12 +4,13 @@
 import sys, posix, string
 from socket import *
 
-
+HOSTNAME = "127.0.0.1"
 BUFSIZE = 1024
 
 # Default port numbers used by the FTP protocol.
 #
-FTP_PORT = 8888
+#FTP_PORT = 8888  # connect to real server
+FTP_PORT = 3333  # connect to cache server
 FTP_DATA_PORT = FTP_PORT - 1
 
 # Change the data port to something not needing root permissions.
@@ -21,7 +22,7 @@ FILENAME = ""
 # Main program (called at the end of this file).
 #
 def main():
-    hostname = sys.argv[1]
+    hostname = HOSTNAME
     control(hostname)
 
 
@@ -41,7 +42,8 @@ def control(hostname):
     r = None
     while 1:
         code = getreply(f)
-        if code in ('221', 'EOF'): break
+        if code in ('221', 'EOF'):
+            break
         if code == '150':
             getdata(r)
             code = getreply(f)
@@ -68,7 +70,7 @@ def newdataport(s, f):
     port = nextport + FTP_DATA_PORT
     nextport = (nextport+1) % 16
     r = socket(AF_INET, SOCK_STREAM)
-    r.bind(("127.0.0.1", port))
+    r.bind((HOSTNAME, port))
     r.listen(1)
     sendportcmd(s, f, port)
     return r
@@ -77,8 +79,7 @@ def newdataport(s, f):
 # Send an appropriate port command.
 #
 def sendportcmd(s, f, port):
-    hostname = gethostname()
-    hostaddr = "127.0.0.1"
+    hostaddr = HOSTNAME
     hbytes = string.splitfields(hostaddr, '.')
     pbytes = [repr(port//256), repr(port%256)]
     bytes = hbytes + pbytes
@@ -98,14 +99,14 @@ def getreply(f):
     if not line: 
         return 'EOF'
 
-    print (line)
+    print("line = %s" % line)
     code = line[:3]
     if line[3:4] == '-':
         while 1:
             line = f.readline()
             if not line: 
                 break # Really an error
-            print (line)
+            print ("line = %s" % line)
             if line[:3] == code and line[3:4] != '-': break
 
     return code
@@ -129,8 +130,8 @@ def getdata(r):
             sys.stdout.write(data)
 
     else:
-
-        file = open(FILENAME, 'wb')                 # create local file in cwd
+        savefilename = "./downloads" + "/" + FILENAME
+        file = open(savefilename, 'wb')                 # create local file in cwd
         while True:
             data = conn.recv(BUFSIZE)
             if not data:
@@ -155,4 +156,5 @@ def getcommand():
 
 # Call the main program.
 #
-main()
+if __name__ == "__main__":
+    main()

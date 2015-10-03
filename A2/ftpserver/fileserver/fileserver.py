@@ -7,13 +7,13 @@ import os,socket,threading,time
 allow_delete = False
 local_ip = "127.0.0.1"
 local_port = 8888
-currdir = os.path.abspath('.')
+
 
 class FTPserverThread(threading.Thread):
     def __init__(self,(conn,addr)):
         self.conn = conn
         self.addr = addr
-        self.basewd = currdir
+        self.basewd = "./files"
         self.cwd = self.basewd
         self.rest = False
         self.pasv_mode = False
@@ -168,7 +168,7 @@ class FTPserverThread(threading.Thread):
 
     def RETR(self,cmd):
         fn = os.path.join(self.cwd,cmd[5:-2])
-        #fn=os.path.join(self.cwd,cmd[5:-2]).lstrip('/')
+
         print 'Downlowding:',fn
         if self.mode == 'I':
             fi = open(fn,'rb')
@@ -187,23 +187,6 @@ class FTPserverThread(threading.Thread):
         self.stop_datasock()
         self.conn.send('226 Transfer complete.\r\n')
 
-    def STOR(self,cmd):
-        fn = os.path.join(self.cwd,cmd[5:-2])
-        print 'Uplaoding:',fn
-        if self.mode == 'I':
-            fo = open(fn,'wb')
-        else:
-            fo = open(fn,'w')
-        self.conn.send('150 Opening data connection.\r\n')
-        self.start_datasock()
-        while True:
-            data = self.datasock.recv(1024)
-            if not data: 
-                break
-            fo.write(data)
-        fo.close()
-        self.stop_datasock()
-        self.conn.send('226 Transfer complete.\r\n')
 
 class FTPserver(threading.Thread):
     def __init__(self):
