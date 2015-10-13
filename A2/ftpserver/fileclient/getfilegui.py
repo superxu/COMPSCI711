@@ -44,12 +44,16 @@ class FtpForm(Form):
 
     def onSubmit(self):
         Form.onSubmit(self)
+        
         localdir   = self.content['Local Dir'].get()
         remotedir  = self.content['Remote Dir'].get()
         servername = self.content['Server Name'].get()
         filename   = self.content['File Name'].get()
         portnum    = self.content['Port Number']
         userinfo   = ()
+
+        print("!!!!!!!!!! servername = %s !!!!!!!!!!" % servername)
+
         if username and password:
             userinfo = (username, password)
         if localdir:

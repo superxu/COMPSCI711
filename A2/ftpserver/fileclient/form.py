@@ -6,11 +6,8 @@ entrysize = 40
 class Form:                                           # add non-modal form box
     def __init__(self, labels, parent=None):          # pass field labels list
         labelsize = max(len(x) for x in labels) + 8
-        root = Tk()
-        root.title("Client")
-        root.geometry("600x600")
-        box = Frame(root) # box has rows, buttons
-        box.pack(expand=YES, fill=X)             
+        box = Frame(parent) # box has rows, buttons
+        box.pack(expand=YES, fill=BOTH)             
         rows = Frame(box, bd=2, relief=GROOVE)        # go=button or return key
         rows.pack(side=TOP, expand=YES, fill=BOTH)       # runs onSubmit method
         self.content = {}
@@ -22,39 +19,32 @@ class Form:                                           # add non-modal form box
             entry.pack(side=RIGHT, expand=YES, fill=BOTH)
             self.content[label] = entry
 
-        Button(box, text='Exit', command=self.onExit).pack(side=RIGHT)
-        Button(box, text='Connect', command=self.onConnect).pack(side=RIGHT)
-        box.master.bind('<Return>', (lambda event: self.onSubmit()))
+        Button(box, text='  Exit ', command = self.onExit).pack(side = BOTTOM)
+        Button(box, text='Connect', command = self.onConnect).pack(side = BOTTOM)
+        #box.master.bind('<Return>', (lambda event: self.onSubmit()))
 
 
-
-        Lb1 = Listbox(root, selectmode = SINGLE, width = 100)
+        Lb1 = Listbox(box, selectmode = SINGLE)
         self.listbox = Lb1
-        Lb1.insert(1, "Python")
+        Lb1.insert(1, "image.gif")
         Lb1.insert(2, "Perl")
         Lb1.insert(3, "C")
-        Lb1.insert(4, "PHP")
-        Lb1.insert(5, "JSP")
-        Lb1.insert(6, "Ruby")
+
 
         Lb1.pack(expand = YES, fill = BOTH)
 
-        Button_download = Button(root, text="Download", command=self.check_list)
+        Button_download = Button(box, text = "Download", command = self.onDownload)
         Button_download.pack()
 
-        Button_listfile = Button(root, text="ListFiles", command=self.list_server_files)
+        Button_listfile = Button(box, text = "ListFiles", command = self.onListfiles)
         Button_listfile.pack()
 
-    def check_list(self):
+    def onDownload(self):
         try:
             s = self.listbox.selection_get()
             print 'selected:', s
         except:
             print 'no selection'
-
-
-    def list_server_files(self):
-        print 'File list:'
 
 
     def onConnect(self):                                      # override this
@@ -64,10 +54,15 @@ class Form:                                           # add non-modal form box
     def onExit(self):                                      # override if need
         Tk().quit()                                          # default is exit
 
+
+    def onListfiles(self):
+        pass
+
 class DynamicForm(Form):
     def __init__(self, labels=None):
         labels = input('Enter field names: ').split()
         Form.__init__(self, labels)
+    
     def onSubmit(self):
         print('Field values...')
         Form.onSubmit(self)
