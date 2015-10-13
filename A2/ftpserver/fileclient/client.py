@@ -3,6 +3,9 @@
 
 import sys, posix, string
 from socket import *
+from form import Form 
+from Tkinter import Tk, mainloop
+import os, thread 
 
 HOSTNAME = "127.0.0.1"
 BUFSIZE = 1024
@@ -18,6 +21,54 @@ FTP_DATA_PORT = FTP_PORT - 1
 FTP_DATA_PORT = FTP_DATA_PORT + 50000
 
 FILENAME = ""
+
+
+class FtpForm(Form):
+    def __init__(self):
+        root = Tk()
+        root.title(self.title)
+        labels = ['Server Name', 'Port Number', 'Remote Dir', 'File Name']
+        Form.__init__(self, labels, root)
+        self.mutex = thread.allocate_lock()
+        self.threads = 0
+
+    def transfer(self, filename, servername, remotedir, userinfo):
+        try:
+            self.do_transfer(filename, servername, remotedir, userinfo)
+            print('%s of "%s" successful'  % (self.mode, filename))
+        except:
+            #print('%s of "%s" has failed:' % (self.mode, filename), end=' ')
+            print(sys.exc_info()[0], sys.exc_info()[1])
+        self.mutex.acquire()
+        self.threads -= 1
+        self.mutex.release()
+
+    def onSubmit(self):
+        Form.onSubmit(self)
+        localdir   = self.content['Local Dir'].get()
+        remotedir  = self.content['Remote Dir'].get()
+        servername = self.content['Server Name'].get()
+        filename   = self.content['File Name'].get()
+        portnum    = self.content['Port Number']
+        userinfo   = ()
+        if username and password:
+            userinfo = (username, password)
+        if localdir:
+            os.chdir(localdir)
+        self.mutex.acquire()
+        self.threads += 1
+        self.mutex.release()
+        ftpargs = (filename, servername, remotedir, userinfo)
+        thread.start_new_thread(self.transfer, ftpargs)
+        tkMessageBox.showinfo(self.title, '%s of "%s" started' % (self.mode, filename))
+
+    def onCancel(self):
+        if self.threads == 0:
+            Tk().quit()
+        else:
+            tkMessageBox.showinfo(self.title,
+                     'Cannot exit: %d threads running' % self.threads)
+
 
 # Main program (called at the end of this file).
 #
@@ -153,8 +204,17 @@ def getcommand():
     except EOFError:
         return ''
 
+class FtpGetfileForm(FtpForm):
+    title = 'Client'
+    mode  = 'Download'
+    def do_transfer(self, filename, servername, remotedir, userinfo):
+        #getfile.getfile(filename, servername, remotedir, userinfo, verbose=False, refetch=True)
+        pass
+
 
 # Call the main program.
 #
 if __name__ == "__main__":
-    main()
+    FtpGetfileForm()
+    mainloop()
+    #main()
