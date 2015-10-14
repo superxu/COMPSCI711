@@ -26,9 +26,6 @@ class Form:                                           # add non-modal form box
 
         Lb1 = Listbox(box, selectmode = SINGLE)
         self.listbox = Lb1
-        Lb1.insert(1, "image.gif")
-        Lb1.insert(2, "Perl")
-        Lb1.insert(3, "C")
 
 
         Lb1.pack(expand = YES, fill = BOTH)
@@ -38,6 +35,7 @@ class Form:                                           # add non-modal form box
 
         Button_listfile = Button(box, text = "ListFiles", command = self.onListfiles)
         Button_listfile.pack()
+
 
     def onDownload(self):
         try:
@@ -51,12 +49,20 @@ class Form:                                           # add non-modal form box
         for key in self.content:                             # user inputs in
             print(key, '\t=>\t', self.content[key].get())    # self.content[k]
 
+
     def onExit(self):                                      # override if need
         Tk().quit()                                          # default is exit
 
 
-    def onListfiles(self):
-        pass
+
+    def onListfiles(self, files):
+        num = 0
+        for item in files:
+            num += 1
+            strings = item.split(' ')
+            #print("string = %s" % strings)
+            self.listbox.insert(num, strings[-1].rstrip('\r\n'))
+
 
 class DynamicForm(Form):
     def __init__(self, labels=None):

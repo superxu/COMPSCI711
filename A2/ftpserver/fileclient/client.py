@@ -7,13 +7,9 @@ from form import Form
 from Tkinter import Tk, mainloop
 import os, thread 
 import tkMessageBox
+import fnmatch
 
-HOSTNAME = "127.0.0.1"
 BUFSIZE = 1024
-
-
-
-FILENAME = ""
 
 
 class FtpForm(Form):
@@ -30,18 +26,10 @@ class FtpForm(Form):
         self.servername = ""
         self.filename = ""
         self.socket = None
+        self.transfer_done = 0
+        self.data_transfer_done = 0
+        self.filelist = []
     
-
-    def transfer(self, filename, servername, remotedir, userinfo):
-        try:
-            self.do_transfer(filename, servername, remotedir, userinfo)
-            print('%s of "%s" successful'  % (self.mode, filename))
-        except:
-            #print('%s of "%s" has failed:' % (self.mode, filename), end=' ')
-            print(sys.exc_info()[0], sys.exc_info()[1])
-        self.mutex.acquire()
-        self.threads -= 1
-        self.mutex.release()
 
 
     def onConnect(self):
@@ -61,6 +49,25 @@ class FtpForm(Form):
     def onListfiles(self):
         # list files on server
         print("File List:")
+        cmd = "list" 
+        self.socket.send(cmd + "\r\n")
+        f = self.socket.makefile('r')
+
+        while 1:
+            code = self.getreply(f)
+            print("code = %s"  % code)
+            if code in ('221', 'EOF'):
+                self.socket.send("quit" + "\r\n")
+                break
+            if code == '150':
+                self.getfilelist(self.dataport)
+                code = self.getreply(f)
+
+            if self.data_transfer_done == 1:
+                self.data_transfer_done = 0
+                break
+
+        Form.onListfiles(self, self.filelist)
 
 
     
@@ -69,23 +76,26 @@ class FtpForm(Form):
             self.filename = self.listbox.selection_get()
         except:
             print 'no selection'
+
         # download a file
         print("Starting to download file: %s " % self.filename)
         cmd = "retr " + self.filename 
         self.socket.send(cmd + "\r\n")
         f = self.socket.makefile('r')
-        r = self.newdataport(self.servername, self.socket, f)
+
         while 1:
             code = self.getreply(f)
+            print("code = %s"  % code)
             if code in ('221', 'EOF'):
                 self.socket.send("quit" + "\r\n")
                 break
             if code == '150':
-                self.getdata(r)
+                self.getfiledata(self.dataport)
                 code = self.getreply(f)
-                r = None
-         
 
+            if self.transfer_done == 1:
+                self.transfer_done = 0
+                return
 
 
     def onExit(self):
@@ -94,6 +104,8 @@ class FtpForm(Form):
         else:
             tkMessageBox.showinfo(self.title,
                      'Cannot exit: %d threads running' % self.threads)
+
+
 
     def connect(self, servername, portnum):
         #
@@ -104,38 +116,32 @@ class FtpForm(Form):
         s.connect((servername, portnum))
         self.control(servername, s)
 
+
+
     # Control process (user interface and user protocol interpreter).
     #
+    
     def control(self, servername, s):
         #
         # Create control connection
         #
-        global FILENAME
         f = s.makefile('r') # Reading the replies is easier from a file...
         #
         # Control loop
         #
-        r = None
-        while 1:
-            code = self.getreply(f)
-            print("code = %s" % code)
-            if code in ('221', 'EOF'):
-                break
-            if code == '150':
-                self.getdata(r)
-                code = self.getreply(f)
-                r = None
-            if not r:
-                r = self.newdataport(servername, s, f)
-            cmd = self.getcommand()
-            if not cmd: 
-                break
+        self.dataport = self.newdataport(servername, s, f)
+        code = self.getreply(f)
+        print("code = %s" % code)
+        if code in ('221', 'EOF'):
+            return
 
-            s.send(cmd + "\r\n")
-            if cmd.find("retr") != -1:
-                FILENAME = cmd[5:]
+        if code == '150':
+            self.getfiledata(self.dataport)
+            code = self.getreply(f)
+            
     
 
+    
     # Create a new data port and send a PORT command to the server for it.
     # (Cycle through a number of ports to avoid problems with reusing
     # a port within a short time.)
@@ -176,65 +182,63 @@ class FtpForm(Form):
         if not line: 
             return 'EOF'
 
-        print("line = %s" % line)
+        if "226" in line:
+            self.transfer_done = 1
+
+        #print("line = %s" % line)
         code = line[:3]
         if line[3:4] == '-':
             while 1:
                 line = f.readline()
                 if not line: 
                     break # Really an error
-                print ("line = %s" % line)
+                #print ("line = %s" % line)
                 if line[:3] == code and line[3:4] != '-': break
 
         return code
 
 
-
     # Get the data from the data connection.
     #
-    def getdata(self, r):
-        global FILENAME
+    def getfilelist(self, r):
 
         print ('accepting data connection')
         conn, host = r.accept()
         print ('data connection accepted')
-        if FILENAME == "":
-            while True:
-                data = conn.recv(BUFSIZE)
-                if not data: 
-                    break
-                sys.stdout.write(data)
+        
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data: 
+                break
+            sys.stdout.write(data)
+            self.filelist.append(data)
 
-        else:
-            savefilename = "./downloads" + "/" + FILENAME
-            file = open(savefilename, 'wb')                 # create local file in cwd
-            while True:
-                data = conn.recv(BUFSIZE)
-                if not data:
-                     break
-                file.write(data)
-
-            FILENAME = ""
-            
+        self.data_transfer_done = 1
         print ('end of data connection')
 
-    # Get a command from the user.
+
+    # Get the data from the data connection.
     #
-    def getcommand(self):
-        try:
-            while 1:
-                line = raw_input('client> ')
-                if line: 
-                    return line
-        except EOFError:
-            return ''
+    def getfiledata(self, r):
+
+        print ('accepting data connection')
+        conn, host = r.accept()
+        print ('data connection accepted')
+        
+        savefilename = "./downloads" + "/" + self.filename
+        file = open(savefilename, 'wb')                 # create local file in cwd
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data:
+                 break
+            file.write(data)
+
+        print ('end of data connection')
+
 
 class FtpGetfileForm(FtpForm):
     title = 'Client'
     mode  = 'Download'
-    def do_transfer(self, filename, servername, remotedir, userinfo):
-        #getfile.getfile(filename, servername, remotedir, userinfo, verbose=False, refetch=True)
-        pass
 
 
 # Call the main program.
@@ -242,4 +246,3 @@ class FtpGetfileForm(FtpForm):
 if __name__ == "__main__":
     FtpGetfileForm()
     mainloop()
-    #main()
