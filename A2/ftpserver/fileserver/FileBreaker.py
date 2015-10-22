@@ -90,7 +90,7 @@ class StreamBreaker():
               circleIndex = 0
               chunks += 1
               m = hashlib.sha1()
-              sys.stdout.write(filechuncks)
+              #sys.stdout.write(filechuncks)
 
               filename = hashdigest
               writefd = io.open(filename, mode='wb', buffering=-1, encoding=None, errors=None, newline=None, closefd=True)
@@ -107,36 +107,36 @@ class StreamBreaker():
         if len(bytesRead) == 0:
            break
 
-      print "chunks = %s"  % chunks
-      print "duplicate = %s" % duplicate
+      #print "chunks = %s"  % chunks
+      #print "duplicate = %s" % duplicate
 
 
 
-def join_chunks(self):
-    filelist = os.listdir(".")
-    sum = 0
-    fd_write =  open("xxx.txt", "wb")
-    for i in range(0, len(filelist)):
-        if (os.path.isfile(filelist[i])):
-            if len(filelist[i]) == 40:
-                print "file name is: %s" % filelist[i]
-                binary_read = open(filelist[i], "rb")
-                count = os.stat(sortfilelist[i]).st_size
-                print "count = %s" % count
-                sum += count
-                content = binary_read.read(count)
-                fd_write.write(content)
-                binary_read.close()
+    def join_chunks(self):
+        filelist = self.hashlist
+        sum = 0
+        fd_write =  open("xxx.txt", "wb")
+        for i in range(0, len(filelist)):
+            if (os.path.isfile(filelist[i])):
+                if len(filelist[i]) == 40:
+                    print "file name is: %s" % filelist[i]
+                    binary_read = open(filelist[i], "rb")
+                    count = os.stat(filelist[i]).st_size
+                    print "count = %s" % count
+                    sum += count
+                    content = binary_read.read(count)
+                    fd_write.write(content)
+                    binary_read.close()
 
-    print "sum = %s" % sum
-    fd_write.close()
+        print "sum = %s" % sum
+        fd_write.close()
 
 
 
 
 def main():
     chunks = StreamBreaker()
-    print "filename = %s" % sys.argv[1]
+    #print "filename = %s" % sys.argv[1]
     chunks.SetWindowSizeAndMask(9, (1 << 9) - 1)
     chunks.GetSegments(sys.argv[1])
     chunks.join_chunks()
