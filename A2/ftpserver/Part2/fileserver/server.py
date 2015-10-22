@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import os,socket,threading,time
-
+from Rabin import StreamBreaker
 
 allow_delete = False
 local_ip = "127.0.0.1"
@@ -18,7 +18,10 @@ class FTPserverThread(threading.Thread):
         self.rest = False
         self.pasv_mode = False
         self.mode = "I"        # default mode: BINARY
+        self.filebreaker = StreamBreaker()
         threading.Thread.__init__(self)
+
+        self.filebreaker.SetWindowSizeAndMask(9, (1 << 9) - 1)
 
     def run(self):
         self.conn.send('220 Welcome!\r\n')
@@ -166,6 +169,46 @@ class FTPserverThread(threading.Thread):
         self.rest = True
         self.conn.send('250 File position reseted.\r\n')
 
+
+
+    def RETR(self,cmd):
+        fn = os.path.join(self.cwd,cmd[5:-2])
+
+        if self.mode == 'I':
+            fi = open(fn,'rb')
+        else:
+            fi = open(fn,'r')
+
+        if fi:
+            print 'Downloading:', fn
+            # break the file into chunks 
+            self.filebreaker.filename =  fn
+            print "filename = %s" % self.filebreaker.filename
+            self.filebreaker.GetSegments(self.filebreaker.filename)
+
+            # compare hashlist with existing chunks
+            for value in self.filebreaker.hashlist:
+                print "hash = %s" % value
+
+
+            self.conn.send('150 Opening data connection.\r\n')
+            if self.rest:
+                fi.seek(self.pos)
+                self.rest = False
+
+
+            data = fi.read(1024)
+            self.start_datasock()
+            while data:
+                self.datasock.send(data)
+                data = fi.read(1024)
+            fi.close()
+            self.stop_datasock()
+            self.conn.send('226 Transfer complete.\r\n')
+        else:
+            self.conn.send('500 Sorry.\r\n')
+
+    '''
     def RETR(self,cmd):
         fn = os.path.join(self.cwd,cmd[5:-2])
 
@@ -190,7 +233,7 @@ class FTPserverThread(threading.Thread):
             self.conn.send('226 Transfer complete.\r\n')
         else:
             self.conn.send('500 Sorry.\r\n')
-
+        '''
 
 class FTPserver(threading.Thread):
     def __init__(self):

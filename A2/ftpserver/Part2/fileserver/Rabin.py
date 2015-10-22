@@ -84,7 +84,7 @@ class StreamBreaker():
               m = hashlib.sha1()
               #sys.stdout.write(filechuncks)
 
-              filename = "files" + "/" + hashdigest
+              filename = "chunks" + "/" + hashdigest
               writefd = io.open(filename, mode='wb', buffering=-1, encoding=None, errors=None, newline=None, closefd=True)
               writefd.write(filechuncks)
               filechuncks = ""
@@ -133,7 +133,7 @@ def main():
     chunks.filename = "files" + "/" + sys.argv[1]
     print "filename = %s" % chunks.filename
     chunks.GetSegments(chunks.filename)
-    chunks.join_chunks()
+    #chunks.join_chunks()
 
 
 

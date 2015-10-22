@@ -29,6 +29,7 @@ FTP_DATA_PORT = FTP_DATA_PORT + 50000
 DIRNAME = "./cachefiles"
 CACHELOG = "./cachefiles/fileinfo.log"
 REALSERVER_DIRNAME = "./files"
+CHUNKSDIR = "./cachechunks"
 
 
 class FtpForm(Form):
