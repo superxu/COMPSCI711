@@ -1,5 +1,4 @@
-
-
+import StringIO
 from Tkinter import *
 entrysize = 40
 
@@ -38,11 +37,7 @@ class Form:                                           # add non-modal form box
 
 
     def onDownload(self):
-        try:
-            s = self.listbox.selection_get()
-            print 'selected:', s
-        except:
-            print 'no selection'
+        pass
 
 
     def onConnect(self):                                      # override this
@@ -56,13 +51,18 @@ class Form:                                           # add non-modal form box
 
 
     def onListfiles(self, files):
-        num = 0
-        for item in files:
-            num += 1
-            strings = item.split(' ')
-            #print("string = %s" % strings)
-            self.listbox.insert(num, strings[-1].rstrip('\r\n'))
+        self.listbox.delete(0, END)
 
+        num = 0
+        string = "".join(files)
+        print "string = %s" % string
+        strings = string.split("\r\n\r\n")
+        for filename in strings:
+            print("filename = %s" % filename)
+            showname = filename.split(' ')
+            self.listbox.insert(num, showname[-1])
+            num += 1
+        
 
 class DynamicForm(Form):
     def __init__(self, labels=None):

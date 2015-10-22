@@ -8,6 +8,7 @@ from Tkinter import Tk, mainloop
 import os
 import tkMessageBox
 
+
 BUFSIZE = 1024
 
 
@@ -45,6 +46,7 @@ class FtpForm(Form):
 
     def onListfiles(self):
         # list files on server
+        self.filelist = []
         print("File List:")
         cmd = "list" 
         self.socket.send(cmd + "\r\n")
@@ -100,28 +102,25 @@ class FtpForm(Form):
   
 
     def connect(self, servername, portnum):
-        #
-        # Create control connection
-        #
         s = socket(AF_INET, SOCK_STREAM)
         self.socket = s
-        s.connect((servername, portnum))
-        self.control(servername, s)
+        self.socket.connect((servername, portnum))
+        self.control(servername)
 
 
 
     # Control process (user interface and user protocol interpreter).
     #
     
-    def control(self, servername, s):
+    def control(self, servername):
         #
         # Create control connection
         #
-        f = s.makefile('r') # Reading the replies is easier from a file...
+        f = self.socket.makefile('r') # Reading the replies is easier from a file...
         #
         # Control loop
         #
-        self.dataport = self.newdataport(servername, s, f)
+        self.dataport = self.newdataport(servername, self.socket, f)
         code = self.getreply(f)
         print("code = %s" % code)
         if code in ('221', 'EOF'):
@@ -218,12 +217,12 @@ class FtpForm(Form):
         print ('data connection accepted')
         
         savefilename = "./downloads" + "/" + self.filename
-        file = open(savefilename, 'wb')                 # create local file in cwd
+        writefile = open(savefilename, 'wb')                 # create local file in cwd
         while True:
             data = conn.recv(BUFSIZE)
             if not data:
                  break
-            file.write(data)
+            writefile.write(data)
 
         print ('end of data connection')
 
