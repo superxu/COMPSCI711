@@ -5,9 +5,8 @@ import sys, posix, string
 from socket import *
 from form import Form 
 from Tkinter import Tk, mainloop
-import os, thread 
+import os
 import tkMessageBox
-import fnmatch
 
 BUFSIZE = 1024
 
@@ -19,8 +18,6 @@ class FtpForm(Form):
         root.geometry("600x600")
         labels = ['Server Name', 'Port Number']
         Form.__init__(self, labels)
-        self.mutex = thread.allocate_lock()
-        self.threads = 0
         self.portnum = 0
         self.nextport = 0
         self.servername = ""
@@ -99,13 +96,8 @@ class FtpForm(Form):
 
 
     def onExit(self):
-        if self.threads == 0:
-            Tk().quit()
-        else:
-            tkMessageBox.showinfo(self.title,
-                     'Cannot exit: %d threads running' % self.threads)
-
-
+        Tk().quit()
+  
 
     def connect(self, servername, portnum):
         #

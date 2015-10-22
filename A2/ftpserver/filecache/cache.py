@@ -9,6 +9,9 @@ import datetime
 import posix, string
 import threading
 import socket
+from form import Form 
+from Tkinter import Tk, mainloop
+import tkMessageBox
 
 
 HOSTNAME = "127.0.0.1"
@@ -24,7 +27,49 @@ FTP_DATA_PORT = FTP_PORT - 1
 FTP_DATA_PORT = FTP_DATA_PORT + 50000
 
 DIRNAME = "./cachefiles"
+CACHELOG = "./cachefiles/fileinfo.log"
 REALSERVER_DIRNAME = "./files"
+
+
+class FtpForm(Form):
+    def __init__(self):
+        root = Tk()
+        root.title(self.title)
+        root.geometry("600x600")
+        Form.__init__(self)
+   
+
+        self.portnum = 0
+        self.nextport = 0
+        self.servername = ""
+        self.filename = ""
+        self.socket = None
+        self.transfer_done = 0
+        self.data_transfer_done = 0
+        self.filelist = []
+    
+
+
+    def onListfiles(self):
+        # list files on server
+        print("File List:")
+        self.filelist = os.listdir(DIRNAME)
+
+        Form.onListfiles(self, self.filelist)
+
+
+    
+    def onShowlog(self):
+        fd = open(CACHELOG, "r")
+        data = json.load(fd)
+        print data
+        Form.onShowlog(self, data)
+
+
+
+    def onExit(self):
+        Tk().quit()
+
 
 class CacheClient():
    
@@ -552,6 +597,10 @@ class CacheLog():
 
 
 
+class FtpGetfileForm(FtpForm):
+    title = 'CacheServer'
+    mode  = 'Download'
+
 
 
 
@@ -576,5 +625,7 @@ def main():
 
 
 if __name__ == "__main__":
+    FtpGetfileForm()
+    mainloop()
     main()
 
