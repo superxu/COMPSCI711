@@ -190,7 +190,7 @@ class FTPserverThread(threading.Thread):
             newfilelist = os.listdir(self.filebreaker.chunksdir)
             for chunkname in newfilelist:
                 if len(chunkname) == 40:
-                    print "existing chunk name = %s" % chunkname
+                    #print "existing chunk name = %s" % chunkname
                     self.chunklist.append(chunkname)
 
             # break the file into chunks 
@@ -205,7 +205,7 @@ class FTPserverThread(threading.Thread):
 
             # compare hashlist with existing chunks
             for value in self.filebreaker.hashlist:
-                print "hash = %s" % value
+               # print "hash = %s" % value
                 if value in self.chunklist:
                     pass
                 else:

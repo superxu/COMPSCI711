@@ -91,6 +91,9 @@ class CacheClient():
         self.chunksdir = CHUNKSDIR
         self.savefilename = ""
         self.requestfile = ""
+        self.recvdatelen = 0
+        self.totallen = 0
+        self.percent = 0.0
 
 
     def downloadfilefromserver(self):
@@ -127,7 +130,7 @@ class CacheClient():
                 r = self.newdataport(self.socket, f)
 
             cmd = "list"
-            print("cmd = %s" % cmd)
+            #print("cmd = %s" % cmd)
             if not cmd: 
                 break
 
@@ -162,7 +165,7 @@ class CacheClient():
                 pass
             else:
                 cmd = "getc"
-                print("cmd = %s" % cmd)
+                #print("cmd = %s" % cmd)
                 self.socket.send(cmd + "\r\n")
 
 
@@ -194,7 +197,7 @@ class CacheClient():
                 pass
             else:
                 cmd = "retr " + self.filename  
-                print("cmd = %s" % cmd)
+                #print("cmd = %s" % cmd)
                 self.socket.send(cmd + "\r\n")
 
     # Create a new data port and send a PORT command to the server for it.
@@ -253,7 +256,7 @@ class CacheClient():
             if not data: 
                 break
 
-            sys.stdout.write(data)
+            #sys.stdout.write(data)
             self.filelist.append(data)
 
         self.listfilesok = True
@@ -264,7 +267,6 @@ class CacheClient():
         self.filechunklist = []
         string = ''
         conn, host = r.accept()
-        print "getfilechunklist"
 
         while True:
             data = conn.recv(BUFSIZE)
@@ -276,6 +278,20 @@ class CacheClient():
         self.filechunklist = pickle.loads(string)
         self.getchunklistok = True
 
+
+    def getpercentage(self):
+        if self.recvdatelen == 0:
+             self.recvdatelen = 0
+             self.percent = 100.0 # 100%
+        else:
+            self.recvdatelen -= 40*len(self.filechunklist)
+            if self.recvdatelen == self.totallen:
+                self.percent = 0.0
+            else:
+                self.percent = (float(self.totallen - self.recvdatelen)/float(self.totallen)) * 100
+
+        print "received data length = %s" % self.recvdatelen
+        print "percentage = %s" % self.percent
 
 
 
@@ -296,12 +312,14 @@ class CacheClient():
                     fd_write.write(content)
                     binary_read.close()
 
-        print "sum = %s" % sum
+        self.totallen = sum
+        print "total data length = %s" % self.totallen
         fd_write.close()
 
+        self.getpercentage()
+    
         # clear file chunk list
         self.filechunklist = []
-
 
 
 
@@ -315,12 +333,12 @@ class CacheClient():
         num = 0
 
         for hashvalue in self.filechunklist:
-            print "hashvalue = %s" % hashvalue
+            #print "hashvalue = %s" % hashvalue
             if hashvalue in filecontent:
                 filenamelist.append(hashvalue)
-                print "found hashvalue = %s" % hashvalue
+                #print "found hashvalue = %s" % hashvalue
                 offset = filecontent.index(hashvalue) + 40
-                print "offset = %s" % offset
+                #print "offset = %s" % offset
                 fileoffset.append(offset)
 
         
@@ -349,6 +367,7 @@ class CacheClient():
     def getdata(self, r):
         conn, host = r.accept()
         filename = self.chunksdir + "/" + self.filename
+        recvdata = ""
 
         filefd = open(filename, 'wb')                 # create local file in cwd
         while True:
@@ -356,9 +375,12 @@ class CacheClient():
             if not data:
                  break
             filefd.write(data)
+            recvdata += data
 
         filefd.close()
 
+        self.recvdatelen = len(recvdata)
+  
 
         self.downloadok = True
         self.savefilename = filename
@@ -381,6 +403,7 @@ class CacheServerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.requestfilename = ""
         self.client = CacheClient()
+        self.percentage = 0.0
 
     def run(self):
         self.conn.send('220 Welcome!\r\n')
@@ -494,7 +517,6 @@ class CacheServerThread(threading.Thread):
 
 
 
-
     # received download request
     def RETR(self, cmd):
         # check if the file exists in cache
@@ -502,28 +524,26 @@ class CacheServerThread(threading.Thread):
         self.getfilename = cmd[5:-2]
         print("request file name = %s" % self.requestfilename)
 
+        # I am now a client
+        self.client.hostname = HOSTNAME
+        self.client.filename = self.getfilename
+        self.client.dirname = DIRNAME
+
+        self.client.downloadfilefromserver()
+
         # check if requested file in cache
         result = self.process_request(self.cwd, self.requestfilename)
-        # found file in cache, send data to client
-        if result == True:
+
+
+        if  self.client.downloadok == True:
             self.SEND_DATA_TO_CLIENT(self.requestfilename)
+            self.update_cachelog(self.cwd, self.requestfilename)
+
+        #cannot find requested file in real server
         else:
-            # I am now a client
-            self.client.hostname = HOSTNAME
-            self.client.filename = self.getfilename
-            self.client.dirname = DIRNAME
-
-            self.client.downloadfilefromserver()
-
-            if  self.client.downloadok == True:
-                self.SEND_DATA_TO_CLIENT(self.requestfilename)
-                self.update_cachelog(self.cwd, self.requestfilename)
-
-            #cannot find requested file in real server
-            else:
-                # delete revelant entries
-                self.delete_requestlog_entry(self.requestfilename)
-                self.conn.send('500 Sorry.\r\n')
+            # delete revelant entries
+            self.delete_requestlog_entry(self.requestfilename)
+            self.conn.send('500 Sorry.\r\n')
 
 
     def delete_requestlog_entry(self, entry):
@@ -603,9 +623,10 @@ class CacheServerThread(threading.Thread):
 
         user_request = "user request:" + " file "  + filename + " at " + request_time
         if hit == True:
-            response = "response:" + " cached file " + filename
+            response = "response: " + " 100.0% " + " of file "+ filename  + " was constructed with the cached data"
         else:
-            response = "response:" + " file " + filename  + " downloaded from the server"
+            response = "response: " + str(self.client.percent) +  "% " " of file "+ filename  + " was constructed with the cached data"
+        
 
         valuelist = []
         valuelist.append(user_request)
