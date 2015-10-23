@@ -12,6 +12,7 @@ import socket
 from form import Form 
 from Tkinter import Tk, mainloop
 import tkMessageBox
+import pickle
 
 
 HOSTNAME = "127.0.0.1"
@@ -83,28 +84,31 @@ class CacheClient():
         self.nextport = 0
         self.downloadok = False
         self.listfilesok = False
+        self.getchunklistok = False
         self.socket = None
-        self.file = None
         self.filelist = []
+        self.filechunklist = []
+        self.chunksdir = CHUNKSDIR
 
 
     def downloadfilefromserver(self):
         self.control()
+        self.getfilechunklistfromserver()
         return self.downloadok
 
 
     def getfilelistfromserver(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.hostname, self.ctrl_portnum))
-        self.file =  self.socket.makefile('r') # Reading the replies is easier from a file...
+        f =  self.socket.makefile('r') # Reading the replies is easier from a file...
         #
         # Control loop
         #
         r = None
         while 1:
-            code = self.getreply(self.file)
+            code = self.getreply(f)
             if code in ('221', 'EOF', '500'):
-                print("Fail to download file...")
+                print("Fail to list files...")
                 self.listfilesok = False
                 break
 
@@ -113,10 +117,10 @@ class CacheClient():
                 if self.listfilesok  == True:
                     self.socket.send("quit" + "\r\n")
                     break
-                code = self.getreply(self.file)
+                code = self.getreply(f)
                 r = None
             if not r:
-                r = self.newdataport(self.socket, self.file )
+                r = self.newdataport(self.socket, f)
 
             cmd = "list"
             print("cmd = %s" % cmd)
@@ -126,8 +130,75 @@ class CacheClient():
             self.socket.send(cmd + "\r\n")
 
 
+    def getfilechunklistfromserver(self):
+
+        f =  self.socket.makefile('r') # Reading the replies is easier from a file...
+        #
+        # Control loop
+        #
+        r = None
+        while 1:
+            code = self.getreply(f)
+            if code in ('221', 'EOF', '500'):
+                print("Fail to get file chunks...")
+                break
+
+            if code == '150':
+                self.getfilechunklist(r)
+                if self.getchunklistok == True:
+                    self.socket.send("quit" + "\r\n")
+                    break
+                code = self.getreply(f)
+                r = None
+            if not r:
+                r = self.newdataport(self.socket, f)
+
+            if code == "226":
+                pass
+            else:
+                cmd = "getc"
+                print("cmd = %s" % cmd)
+                self.socket.send(cmd + "\r\n")
+
+
     # Control process (user interface and user protocol interpreter).
     #
+    def control(self):
+        f =  self.socket.makefile('r')
+        r = None
+        while 1:
+            code = self.getreply(f)
+
+            print "control code = %s" % code
+            if code in ('221', 'EOF', '500'):
+                print("Fail to download file...")
+                self.downloadok = False
+                break
+
+            if code == '150':
+                self.getdata(r)
+                if self.downloadok == True:
+                    self.socket.send("quit" + "\r\n")
+                    break
+                code = self.getreply(f)
+                r = None
+
+            if not r:
+                r = self.newdataport(self.socket, f)
+
+            if code in "226":
+                pass
+            else:
+                cmd = "retr " + self.filename  
+                print("cmd = %s" % cmd)
+                self.socket.send(cmd + "\r\n")
+
+
+
+
+
+  
+    '''
     def control(self):
         r = None
         while 1:
@@ -153,8 +224,7 @@ class CacheClient():
                 break
 
             self.socket.send(cmd + "\r\n")
-  
-        
+        '''
 
     # Create a new data port and send a PORT command to the server for it.
     # (Cycle through a number of ports to avoid problems with reusing
@@ -216,7 +286,26 @@ class CacheClient():
             self.filelist.append(data)
 
         self.listfilesok = True
-        print ('end of data connection')
+    
+
+
+    def getfilechunklist(self, r):
+        self.filechunklist = []
+        conn, host = r.accept()
+        
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data: 
+                break
+
+            sys.stdout.write(data)
+            self.filechunklist = pickle.loads(data)
+
+        for value in self.filechunklist:
+            print "value = %s" % value
+
+        self.getchunklistok = True
+
 
 
 
@@ -224,7 +313,11 @@ class CacheClient():
     #
     def getdata(self, r):
         conn, host = r.accept()
-        savefilename = self.dirname + "/" + self.filename
+        # save chunks using hash value as filename
+
+
+        savefilename = self.chunksdir + "/" + self.filename
+
         writefile = open(savefilename, 'wb')                 # create local file in cwd
         while True:
             data = conn.recv(self.buffersize)
@@ -336,11 +429,16 @@ class CacheServerThread(threading.Thread):
     def SEND_DATA_TO_CLIENT(self, filename):
         print 'Downloading:', filename
        
+        # join chunks into a complete file and send it to the client
+
+
+
         if self.mode == 'I':
             fi = open(filename,'rb')
         else:
             fi = open(filename,'r')
        
+
         self.conn.send('150 Opening data connection.\r\n')
        
         data = fi.read(1024)
@@ -395,6 +493,7 @@ class CacheServerThread(threading.Thread):
         origin_values = self.get_requestlog_content(self.cwd)
         print("before pop = %s" % origin_values)
         print("entry = %s" % entry)
+
         if origin_values.has_key(entry):  
             origin_values.pop(entry, None)   
             print("after pop = %s" % origin_values )

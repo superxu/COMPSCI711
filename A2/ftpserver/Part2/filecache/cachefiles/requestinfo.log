@@ -1,8 +1,44 @@
 {
-        "./cachefiles/image.gif": [
+        "./cachefiles/small.txt": [
                 [
-                        "user request: file ./cachefiles/image.gif at 2015-10-23 10:06:37 +1300", 
-                        "response: file ./cachefiles/image.gif downloaded from the server"
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 15:06:41 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 15:01:05 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 13:51:57 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 13:41:23 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 13:33:19 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 13:31:17 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 13:35:44 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 13:44:06 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 14:35:02 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
+                ], 
+                [
+                        "user request: file ./cachefiles/small.txt at 2015-10-23 15:03:50 +1300", 
+                        "response: file ./cachefiles/small.txt downloaded from the server"
                 ]
         ]
 }

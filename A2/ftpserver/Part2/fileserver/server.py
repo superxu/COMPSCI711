@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
+# Author: Name: Shupeng Xu  UPI: sxu487   Student ID: 8260026
+
 
 import os,socket,threading,time
+import pickle
 from Rabin import StreamBreaker
 
 allow_delete = False
@@ -17,6 +20,8 @@ class FTPserverThread(threading.Thread):
         self.cwd = self.basewd
         self.rest = False
         self.pasv_mode = False
+        # existing chunk list
+        self.chunklist = []
         self.mode = "I"        # default mode: BINARY
         self.filebreaker = StreamBreaker()
         threading.Thread.__init__(self)
@@ -159,15 +164,15 @@ class FTPserverThread(threading.Thread):
         self.rnfn = os.path.join(self.cwd,cmd[5:-2])
         self.conn.send('350 Ready.\r\n')
 
-    def RNTO(self,cmd):
-        fn = os.path.join(self.cwd,cmd[5:-2])
-        os.rename(self.rnfn,fn)
-        self.conn.send('250 File renamed.\r\n')
 
-    def REST(self,cmd):
-        self.pos = int(cmd[5:-2])
-        self.rest = True
-        self.conn.send('250 File position reseted.\r\n')
+    def GETC(self, cmd):
+        self.conn.send('150 Here comes file chunk list.\r\n')
+    
+        self.start_datasock()
+        k = pickle.dumps(self.filebreaker.hashlist)
+        self.datasock.send(k+'\r\n')
+        self.stop_datasock()
+        self.conn.send('226 File chunk list send OK.\r\n')
 
 
 
@@ -181,59 +186,52 @@ class FTPserverThread(threading.Thread):
 
         if fi:
             print 'Downloading:', fn
+            # get existing chunks first
+            newfilelist = os.listdir(self.filebreaker.chunksdir)
+            for chunkname in newfilelist:
+                if len(chunkname) == 40:
+                    print "existing chunk name = %s" % chunkname
+                    self.chunklist.append(chunkname)
+
             # break the file into chunks 
             self.filebreaker.filename =  fn
             print "filename = %s" % self.filebreaker.filename
             self.filebreaker.GetSegments(self.filebreaker.filename)
 
+
+            self.conn.send('150 Opening data connection.\r\n')
+            self.start_datasock()
+            # send hash value list of the file to cache first
+
+
+
             # compare hashlist with existing chunks
             for value in self.filebreaker.hashlist:
                 print "hash = %s" % value
+                if value in self.chunklist:
+                    pass
+                else:
+                    # send chunk to cache
+                    filechunkname = self.filebreaker.chunksdir + "/" + value
+                    filechunk = open(filechunkname, "rb")
+                    data = filechunk.read(1024)
 
+                    while data:
+                        self.datasock.send(data)
+                        data = filechunk.read(1024)
 
-            self.conn.send('150 Opening data connection.\r\n')
-            if self.rest:
-                fi.seek(self.pos)
-                self.rest = False
+                    filechunk.close()
+                    # add this chunk to existing chunk list
+                    self.chunklist.append(value)
 
-
-            data = fi.read(1024)
-            self.start_datasock()
-            while data:
-                self.datasock.send(data)
-                data = fi.read(1024)
-            fi.close()
             self.stop_datasock()
             self.conn.send('226 Transfer complete.\r\n')
+
+
         else:
             self.conn.send('500 Sorry.\r\n')
 
-    '''
-    def RETR(self,cmd):
-        fn = os.path.join(self.cwd,cmd[5:-2])
 
-        if self.mode == 'I':
-            fi = open(fn,'rb')
-        else:
-            fi = open(fn,'r')
-
-        if fi:
-            print 'Downlowding:', fn
-            self.conn.send('150 Opening data connection.\r\n')
-            if self.rest:
-                fi.seek(self.pos)
-                self.rest = False
-            data = fi.read(1024)
-            self.start_datasock()
-            while data:
-                self.datasock.send(data)
-                data = fi.read(1024)
-            fi.close()
-            self.stop_datasock()
-            self.conn.send('226 Transfer complete.\r\n')
-        else:
-            self.conn.send('500 Sorry.\r\n')
-        '''
 
 class FTPserver(threading.Thread):
     def __init__(self):

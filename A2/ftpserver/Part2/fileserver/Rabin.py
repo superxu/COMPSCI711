@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
+# Author: Name: Shupeng Xu  UPI: sxu487   Student ID: 8260026
+
 
 
 import sys
@@ -16,6 +18,7 @@ class StreamBreaker():
       self.bufferSize = 64 * 1024
       self.hashlist = []
       self.filename = ""
+      self.chunksdir = "./chunks"
 
 
     def SetWindowSizeAndMask(self, width, mask):
@@ -86,6 +89,9 @@ class StreamBreaker():
 
               filename = "chunks" + "/" + hashdigest
               writefd = io.open(filename, mode='wb', buffering=-1, encoding=None, errors=None, newline=None, closefd=True)
+              # put hash value at the last of the chunk
+              filechuncks += hashdigest
+
               writefd.write(filechuncks)
               filechuncks = ""
           
