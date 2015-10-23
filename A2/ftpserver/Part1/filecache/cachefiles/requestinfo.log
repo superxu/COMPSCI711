@@ -1,1 +1,32 @@
-{}
+{
+        "./cachefiles/test.txt": [
+                [
+                        "user request: file ./cachefiles/test.txt at 2015-10-23 19:37:33 +1300", 
+                        "response: cached file ./cachefiles/test.txt"
+                ], 
+                [
+                        "user request: file ./cachefiles/test.txt at 2015-10-23 19:37:24 +1300", 
+                        "response: file ./cachefiles/test.txt downloaded from the server"
+                ]
+        ], 
+        "./cachefiles/join.txt": [
+                [
+                        "user request: file ./cachefiles/join.txt at 2015-10-23 19:37:32 +1300", 
+                        "response: cached file ./cachefiles/join.txt"
+                ], 
+                [
+                        "user request: file ./cachefiles/join.txt at 2015-10-23 19:37:26 +1300", 
+                        "response: file ./cachefiles/join.txt downloaded from the server"
+                ]
+        ], 
+        "./cachefiles/image.gif": [
+                [
+                        "user request: file ./cachefiles/image.gif at 2015-10-23 19:37:30 +1300", 
+                        "response: cached file ./cachefiles/image.gif"
+                ], 
+                [
+                        "user request: file ./cachefiles/image.gif at 2015-10-23 19:37:28 +1300", 
+                        "response: file ./cachefiles/image.gif downloaded from the server"
+                ]
+        ]
+}

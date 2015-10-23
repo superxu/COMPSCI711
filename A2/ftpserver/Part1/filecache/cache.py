@@ -9,9 +9,6 @@ import datetime
 import posix, string
 import threading
 import socket
-from form import Form 
-from Tkinter import Tk, mainloop
-import tkMessageBox
 
 
 HOSTNAME = "127.0.0.1"
@@ -31,46 +28,6 @@ CACHELOG = "./cachefiles/fileinfo.log"
 REALSERVER_DIRNAME = "./files"
 
 
-class FtpForm(Form):
-    def __init__(self):
-        root = Tk()
-        root.title(self.title)
-        root.geometry("600x600")
-        Form.__init__(self)
-   
-
-        self.portnum = 0
-        self.nextport = 0
-        self.servername = ""
-        self.filename = ""
-        self.socket = None
-        self.transfer_done = 0
-        self.data_transfer_done = 0
-        self.filelist = []
-    
-
-
-    def onListfiles(self):
-        # list files on server
-        print("File List:")
-        self.filelist = os.listdir(DIRNAME)
-
-        Form.onListfiles(self, self.filelist)
-
-
-    
-    def onShowlog(self):
-        fd = open(CACHELOG, "r")
-        data = json.load(fd)
-        print data
-        Form.onShowlog(self, data)
-
-
-
-    def onExit(self):
-        Tk().quit()
-
-
 class CacheClient():
    
     def __init__(self):
@@ -82,6 +39,16 @@ class CacheClient():
         self.dirname = ""
         self.nextport = 0
         self.downloadok = False
+        self.listfilesok = False
+        self.getchunklistok = False
+        self.socket = None
+        self.filelist = []
+        self.filechunklist = []
+        self.savefilename = ""
+        self.requestfile = ""
+        self.recvdatelen = 0
+        self.totallen = 0
+        self.percent = 0.0
 
 
     def downloadfilefromserver(self):
@@ -90,21 +57,47 @@ class CacheClient():
 
 
 
-    # Control process (user interface and user protocol interpreter).
-    #
-    def control(self):
-        #
-        # Create control connection
-        #
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((self.hostname, self.ctrl_portnum))
-        f = s.makefile('r') # Reading the replies is easier from a file...
+
+    def getfilelistfromserver(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((self.hostname, self.ctrl_portnum))
+        f =  self.socket.makefile('r') # Reading the replies is easier from a file...
         #
         # Control loop
         #
         r = None
         while 1:
             code = self.getreply(f)
+            if code in ('221', 'EOF', '500'):
+                print("Fail to list files...")
+                self.listfilesok = False
+                break
+
+            if code == '150':
+                self.getfilelistdata(r)
+                if self.listfilesok  == True:
+                    self.socket.send("quit" + "\r\n")
+                    break
+                code = self.getreply(f)
+                r = None
+            if not r:
+                r = self.newdataport(self.socket, f)
+
+            cmd = "list"
+            #print("cmd = %s" % cmd)
+            if not cmd: 
+                break
+
+            self.socket.send(cmd + "\r\n")
+
+    # Control process (user interface and user protocol interpreter).
+    #
+    def control(self):
+        f =  self.socket.makefile('r')
+        r = None
+        while 1:
+            code = self.getreply(f)
+            print "control code = %s" % code
             if code in ('221', 'EOF', '500'):
                 print("Fail to download file...")
                 self.downloadok = False
@@ -113,20 +106,21 @@ class CacheClient():
             if code == '150':
                 self.getdata(r)
                 if self.downloadok == True:
-                    s.send("quit" + "\r\n")
+                    self.socket.send("quit" + "\r\n")
                     break
                 code = self.getreply(f)
                 r = None
+
             if not r:
-                r = self.newdataport(s, f)
+                r = self.newdataport(self.socket, f)
 
-            cmd = "retr " + self.filename  
-            print("cmd = %s" % cmd)
-            if not cmd: 
-                break
+            if code in "226":
+                pass
+            else:
+                cmd = "retr " + self.filename  
+                #print("cmd = %s" % cmd)
+                self.socket.send(cmd + "\r\n")
 
-            s.send(cmd + "\r\n")
-  
         
 
     # Create a new data port and send a PORT command to the server for it.
@@ -172,6 +166,22 @@ class CacheClient():
                 if line[:3] == code and line[3:4] != '-': break
 
         return code
+
+
+    def getfilelistdata(self, r):
+        self.filelist = []
+        conn, host = r.accept()
+        
+        while True:
+            data = conn.recv(BUFSIZE)
+            if not data: 
+                break
+
+            sys.stdout.write(data)
+            self.filelist.append(data)
+
+        self.listfilesok = True
+    
 
 
     # Get the data from the data connection.
@@ -252,19 +262,26 @@ class CacheServerThread(threading.Thread):
             self.servsock.close()
 
 
-    # do I need to forward this to real server ?
-    def LIST(self,cmd):
+    # forward this to real server
+    def LIST(self, cmd):
 
-        self.conn.send('150 Here comes the directory listing.\r\n')
-        print 'list:', self.cwd
-        self.start_datasock()
-       
-        for t in os.listdir(self.cwd):
-            k = self.toListItem(os.path.join(self.cwd,t))
-            self.datasock.send(k+'\r\n')
-        
-        self.stop_datasock()
-        self.conn.send('226 Directory send OK.\r\n')
+        # get file list form real server and send it to client
+        self.client.hostname = HOSTNAME
+
+        self.client.getfilelistfromserver()
+
+        if  self.client.listfilesok == True:
+            self.conn.send('150 Here comes the directory listing.\r\n')
+
+            self.start_datasock()
+           
+            for k in self.client.filelist:
+                self.datasock.send(k+'\r\n')
+            
+            self.stop_datasock()
+            self.conn.send('226 Directory send OK.\r\n')
+
+
 
 
     def toListItem(self,fn):
@@ -279,7 +296,7 @@ class CacheServerThread(threading.Thread):
         return d + mode + ' 1 user group ' + str(st.st_size) + ftime + os.path.basename(fn)
 
     def SEND_DATA_TO_CLIENT(self, filename):
-        print 'Downlowding:', filename
+        print 'Downloading:', filename
        
         if self.mode == 'I':
             fi = open(filename,'rb')
@@ -597,24 +614,16 @@ class CacheLog():
 
 
 
-class FtpGetfileForm(FtpForm):
-    title = 'CacheServer'
-    mode  = 'Download'
-
-
-
-
 # cache should be both a client and a server
-
-def main():
-
+def createfiles():
     cachelog = CacheLog()
     dirname = DIRNAME
     cachelog.create_cachelog(dirname)
     cachelog.create_requestlog(dirname)
-    # generate log of files in the directory
-    cachelog.gen_dir_loginfo(dirname)
 
+
+
+def main():
     cacheserver = CacheServer()
     cacheserver.daemon = True
     cacheserver.start()
@@ -625,7 +634,7 @@ def main():
 
 
 if __name__ == "__main__":
-    FtpGetfileForm()
-    mainloop()
+    createfiles()
     main()
+
 

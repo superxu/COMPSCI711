@@ -1,0 +1,12 @@
+{
+        "./cachefiles/test.txt": [
+                [
+                        "user request: file ./cachefiles/test.txt at 2015-10-23 22:39:58 +1300", 
+                        "response:  100.0%  of file ./cachefiles/test.txt was constructed with the cached data"
+                ], 
+                [
+                        "user request: file ./cachefiles/test.txt at 2015-10-23 22:39:57 +1300", 
+                        "response: 0.0%  of file ./cachefiles/test.txt was constructed with the cached data"
+                ]
+        ]
+}
