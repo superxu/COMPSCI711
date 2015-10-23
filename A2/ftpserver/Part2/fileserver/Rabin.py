@@ -36,6 +36,7 @@ class StreamBreaker():
       chunks = 0
       m = hashlib.sha1()
       hashdigest = ""
+      self.hashlist = []
 
       length = os.path.getsize(filename)
       readfd = io.open(filename, mode='rb', buffering=-1, encoding=None, errors=None, newline=None, closefd=True)
@@ -110,27 +111,6 @@ class StreamBreaker():
 
 
 
-    def join_chunks(self):
-        filelist = self.hashlist
-        sum = 0
-        fd_write =  open("files" + "/" + "join.txt", "wb")
-        for i in range(0, len(filelist)):
-            filename = "files" + "/" + filelist[i]
-            if (os.path.isfile(filename)):
-                if len(filelist[i]) == 40:
-                    #print "file name is: %s" % filelist[i]
-                    binary_read = open(filename, "rb")
-                    count = os.stat(filename).st_size
-                    sum += count
-                    content = binary_read.read(count)
-                    fd_write.write(content)
-                    binary_read.close()
-
-        print "sum = %s" % sum
-        fd_write.close()
-
-
-
 
 def main():
     chunks = StreamBreaker()
@@ -139,8 +119,6 @@ def main():
     chunks.filename = "files" + "/" + sys.argv[1]
     print "filename = %s" % chunks.filename
     chunks.GetSegments(chunks.filename)
-    #chunks.join_chunks()
-
 
 
 if __name__ == "__main__":

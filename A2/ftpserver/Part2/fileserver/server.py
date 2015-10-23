@@ -201,9 +201,7 @@ class FTPserverThread(threading.Thread):
 
             self.conn.send('150 Opening data connection.\r\n')
             self.start_datasock()
-            # send hash value list of the file to cache first
-
-
+    
 
             # compare hashlist with existing chunks
             for value in self.filebreaker.hashlist:
@@ -225,6 +223,9 @@ class FTPserverThread(threading.Thread):
                     self.chunklist.append(value)
 
             self.stop_datasock()
+
+            # clear chunk list
+            #self.filebreaker.hashlist = []
             self.conn.send('226 Transfer complete.\r\n')
 
 

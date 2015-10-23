@@ -89,11 +89,15 @@ class CacheClient():
         self.filelist = []
         self.filechunklist = []
         self.chunksdir = CHUNKSDIR
+        self.savefilename = ""
+        self.requestfile = ""
 
 
     def downloadfilefromserver(self):
         self.control()
         self.getfilechunklistfromserver()
+        self.splitfileintochunks()
+        self.join_chunks()
         return self.downloadok
 
 
@@ -139,6 +143,7 @@ class CacheClient():
         r = None
         while 1:
             code = self.getreply(f)
+            print "file chunk code = %s" % code
             if code in ('221', 'EOF', '500'):
                 print("Fail to get file chunks...")
                 break
@@ -168,7 +173,6 @@ class CacheClient():
         r = None
         while 1:
             code = self.getreply(f)
-
             print "control code = %s" % code
             if code in ('221', 'EOF', '500'):
                 print("Fail to download file...")
@@ -192,39 +196,6 @@ class CacheClient():
                 cmd = "retr " + self.filename  
                 print("cmd = %s" % cmd)
                 self.socket.send(cmd + "\r\n")
-
-
-
-
-
-  
-    '''
-    def control(self):
-        r = None
-        while 1:
-            code = self.getreply(self.file )
-            if code in ('221', 'EOF', '500'):
-                print("Fail to download file...")
-                self.downloadok = False
-                break
-
-            if code == '150':
-                self.getdata(r)
-                if self.downloadok == True:
-                    self.socket.send("quit" + "\r\n")
-                    break
-                code = self.getreply(self.file )
-                r = None
-            if not r:
-                r = self.newdataport(self.socket, self.file )
-
-            cmd = "retr " + self.filename  
-            print("cmd = %s" % cmd)
-            if not cmd: 
-                break
-
-            self.socket.send(cmd + "\r\n")
-        '''
 
     # Create a new data port and send a PORT command to the server for it.
     # (Cycle through a number of ports to avoid problems with reusing
@@ -291,42 +262,109 @@ class CacheClient():
 
     def getfilechunklist(self, r):
         self.filechunklist = []
+        string = ''
         conn, host = r.accept()
-        
+        print "getfilechunklist"
+
         while True:
             data = conn.recv(BUFSIZE)
             if not data: 
                 break
 
-            sys.stdout.write(data)
-            self.filechunklist = pickle.loads(data)
+            string += data
 
-        for value in self.filechunklist:
-            print "value = %s" % value
-
+        self.filechunklist = pickle.loads(string)
         self.getchunklistok = True
 
 
+
+
+    def join_chunks(self):
+        filelist = self.filechunklist
+        sum = 0
+        fd_write =  open(DIRNAME + "/" + self.requestfile, "wb")
+
+        for i in range(0, len(filelist)):
+            filename = CHUNKSDIR + "/" + filelist[i]
+            if (os.path.isfile(filename)):
+                if len(filelist[i]) == 40:
+                    #print "file name is: %s" % filelist[i]
+                    binary_read = open(filename, "rb")
+                    count = os.stat(filename).st_size
+                    sum += count
+                    content = binary_read.read(count)
+                    fd_write.write(content)
+                    binary_read.close()
+
+        print "sum = %s" % sum
+        fd_write.close()
+
+        # clear file chunk list
+        self.filechunklist = []
+
+
+
+
+    def splitfileintochunks(self):
+        # split file into chunks and remove original file
+        filenamelist = []
+        fileoffset = [0]
+        filelength = []
+        readfd = open(self.savefilename, "r")
+        filecontent = readfd.read()
+        num = 0
+
+        for hashvalue in self.filechunklist:
+            print "hashvalue = %s" % hashvalue
+            if hashvalue in filecontent:
+                filenamelist.append(hashvalue)
+                print "found hashvalue = %s" % hashvalue
+                offset = filecontent.index(hashvalue) + 40
+                print "offset = %s" % offset
+                fileoffset.append(offset)
+
+        
+
+        for i in range(0, len(fileoffset)-1):
+            length = fileoffset[i+1] - fileoffset[i] - 40
+            filelength.append(length)
+
+
+        
+        for filename in filenamelist:
+            writefd = open(CHUNKSDIR + "/" + filename, "wb")
+            readfd.seek(fileoffset[num])
+            data = readfd.read(filelength[num])
+            writefd.write(data)
+            writefd.close()
+            num += 1
+        
+        
+        readfd.close()
+        
 
 
     # Get the data from the data connection.
     #
     def getdata(self, r):
         conn, host = r.accept()
-        # save chunks using hash value as filename
+        filename = self.chunksdir + "/" + self.filename
 
-
-        savefilename = self.chunksdir + "/" + self.filename
-
-        writefile = open(savefilename, 'wb')                 # create local file in cwd
+        filefd = open(filename, 'wb')                 # create local file in cwd
         while True:
             data = conn.recv(self.buffersize)
             if not data:
                  break
-            writefile.write(data)
+            filefd.write(data)
+
+        filefd.close()
+
 
         self.downloadok = True
+        self.savefilename = filename
+        self.requestfile = self.filename
         self.filename = ""
+
 
 
 
